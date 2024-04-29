@@ -2,7 +2,7 @@
 
 const BatchLinkList = require("../models/BatchLinkListModel");
 const { logger } = require("../services/loggers/Winston");
-const { ValidObjectId } = require("../services/validators/ValidObjectId");
+const { validObjectId } = require("../services/validators/ValidObjectId");
 
 //get all BatchLinkList using mongoose
 const getAllBatchLinkLists = async (req, res) => {
@@ -25,7 +25,7 @@ const getOneBatchLinkList = async (req, res) => {
   try {
     const batchLinkListId = req?.params?.id;
     //object id validation
-    if (!ValidObjectId(batchLinkListId)) {
+    if (!validObjectId(batchLinkListId)) {
       return res.status(400).send({ message: "Invalid ObjectId" });
     }
 
@@ -111,7 +111,7 @@ const updateOneBatchLinkList = async (req, res) => {
     const data = req?.body?.data ? JSON.parse(req?.body?.data) : {};
 
     //object id validation
-    if (!ValidObjectId(batchLinkListId)) {
+    if (!validObjectId(batchLinkListId)) {
       return res.status(400).send({ message: "Invalid ObjectId" });
     }
     let updatedData = { ...data };
@@ -139,7 +139,7 @@ const deleteOneBatchLinkListById = async (req, res) => {
   try {
     const batchLinkListId = req?.params?.id;
     //object id validation
-    if (!ValidObjectId(batchLinkListId)) {
+    if (!validObjectId(batchLinkListId)) {
       return res.status(400).send({ message: "Invalid ObjectId" });
     }
 

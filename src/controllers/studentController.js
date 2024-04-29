@@ -2,7 +2,7 @@
 
 const Student = require("../models/StudentModel");
 const { logger } = require("../services/loggers/Winston");
-const { ValidObjectId } = require("../services/validators/ValidObjectId");
+const { validObjectId } = require("../services/validators/ValidObjectId");
 
 //get all Student using mongoose
 const getAllStudents = async (req, res) => {
@@ -25,7 +25,7 @@ const getOneStudent = async (req, res) => {
   try {
     const studentId = req?.params?.id;
     //object id validation
-    if (!ValidObjectId(studentId)) {
+    if (!validObjectId(studentId)) {
       return res.status(400).send({ message: "Invalid ObjectId" });
     }
 
@@ -191,7 +191,7 @@ const updateOneStudent = async (req, res) => {
     const studentId = req?.params?.id;
     const data = req?.body?.data ? JSON.parse(req?.body?.data) : {};
     //object id validation
-    if (!ValidObjectId(studentId)) {
+    if (!validObjectId(studentId)) {
       return res.status(400).send({ message: "Invalid ObjectId" });
     }
     let updatedData = { ...data };
@@ -220,7 +220,7 @@ const deleteOneStudentById = async (req, res) => {
   try {
     const studentId = req?.params?.id;
     //object id validation
-    if (!ValidObjectId(studentId)) {
+    if (!validObjectId(studentId)) {
       return res.status(400).send({ message: "Invalid ObjectId" });
     }
 

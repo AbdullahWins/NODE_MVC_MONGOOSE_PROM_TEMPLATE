@@ -1,13 +1,13 @@
 const fs = require("fs").promises; // Using the promises version of fs
 const path = require("path");
 const { UniqueNaam } = require("uniquenaam/uniquenaam");
-const serverUrlGetter = require("../serverUrlGetter/serverUrlGetter");
+const getServerBaseUrl = require("../urlHandlers/UrlHandlers");
 
 const handleFileUpload = async ({ req, files, folderName }) => {
   try {
     // Define the destination directory
     const destinationDir = path.join(__dirname, "../../../uploads", folderName);
-    const baseUrl = serverUrlGetter(req);
+    const baseUrl = getServerBaseUrl(req);
 
     // Create the destination directory if it doesn't exist
     await fs.mkdir(destinationDir, { recursive: true });

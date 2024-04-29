@@ -19,7 +19,6 @@ const generateToken = (payload) => {
 const verifyToken = (token) => {
   try {
     const decoded = jwt.verify(token, jwtSecret);
-    console.log();
     logger.log("info", `Decoded token: ${decoded}`);
     return decoded;
   } catch (error) {

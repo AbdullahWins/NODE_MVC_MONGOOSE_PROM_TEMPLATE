@@ -1,6 +1,6 @@
 const { logger } = require("../loggers/Winston");
 
-const AccessValidator = (user, userId) => {
+const accessValidator = (user, userId) => {
   if (user?.role !== "admin") {
     if (user?._doc?._id.toString() !== userId) {
       logger.log("info", user?._doc?._id.toString(), userId);
@@ -19,4 +19,4 @@ const AccessValidator = (user, userId) => {
   }
 };
 
-module.exports = AccessValidator;
+module.exports = accessValidator;

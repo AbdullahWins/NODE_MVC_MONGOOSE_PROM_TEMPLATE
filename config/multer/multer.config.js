@@ -1,6 +1,7 @@
 const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
+const { sendResponse } = require("../../src/helpers/ResponseHelper");
 
 const initializeMulter = (app) => {
   const storage = multer.diskStorage({
@@ -22,7 +23,7 @@ const initializeMulter = (app) => {
   //   app.use(upload.single("file"));
 
   // For handling multiple files (e.g., with input field name "files")
-  app.use(upload.array("files", 10));
+  // app.use(upload.array("files", 10));
 
   // Handle any field name for file uploads
   //   app.use(upload.any());
@@ -32,6 +33,26 @@ const initializeMulter = (app) => {
 
   // If you want to handle mixed types of fields (single and multiple files), you can use:
   // app.use(upload.fields([{ name: "singleFile", maxCount: 1 }, { name: "multipleFiles", maxCount: 10 }]));
+
+  // If you want to handle mixed types of fields (single and multiple files), you can use:
+  app.use(
+    upload.fields([
+      { name: "single", maxCount: 1 },
+      { name: "multiple", maxCount: 10 },
+    ])
+  );
+
+  // Custom Multer error handler middleware
+  app.use((err, req, res, next) => {
+    if (err instanceof multer.MulterError) {
+      // res.status(400).json({ error: "File upload error: " + err?.message });
+
+      //sending response through custom response helper
+      return sendResponse(res, 500, err?.message);
+    } else {
+      next(err);
+    }
+  });
 };
 
 module.exports = { initializeMulter };

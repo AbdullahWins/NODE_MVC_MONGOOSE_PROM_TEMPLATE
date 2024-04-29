@@ -8,7 +8,7 @@ const Teacher = require("../models/TeacherModel");
 const Topic = require("../models/TopicModel");
 
 const { logger } = require("../services/loggers/Winston");
-// const { ValidObjectId } = require("../services/validators/ValidObjectId");
+// const { validObjectId } = require("../services/validators/ValidObjectId");
 
 //get all Course using mongoose
 const getDashboardData = async (req, res) => {

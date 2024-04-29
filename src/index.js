@@ -10,12 +10,8 @@ const { initializeCors } = require("../config/cors/cors.config.js");
 const { initializeServer } = require("../config/server/server.config.js");
 const { initializeMulter } = require("../config/multer/multer.config.js");
 const {
-  initializePassport,
-} = require("../config/authentications/passport.config.js");
-const {
   requestDurationMiddleware,
 } = require("../config/monitorings/prometheus.config.js");
-const StudentEvaluation = require("./models/StudentEvaluationModel.js");
 
 //middlewares
 app.use(express.urlencoded({ extended: true }));
@@ -28,9 +24,6 @@ initializeCors(app);
 
 //multer
 initializeMulter(app);
-
-//passport
-initializePassport(app);
 
 //routes
 app.use(routes);

@@ -4,8 +4,8 @@ const { authorizeAdmin } = require("../middlewares/AuthorizeAdmin");
 const {
   getOneAdmin,
   getAllAdmins,
-  LoginAdmin,
-  RegisterAdmin,
+  loginAdmin,
+  registerAdmin,
   updateAdminById,
   sendPasswordResetOTP,
   validatePasswordResetOTP,
@@ -16,8 +16,8 @@ const {
 
 router.get("/find/:id", authorizeAdmin, getOneAdmin);
 router.get("/all", authorizeAdmin, getAllAdmins);
-router.post("/register", RegisterAdmin);
-router.post("/login", LoginAdmin);
+router.post("/register", registerAdmin);
+router.post("/login", loginAdmin);
 router.post("/send-otp", sendPasswordResetOTP);
 router.post("/validate-otp", validatePasswordResetOTP);
 router.patch("/reset", updateAdminPasswordByOTP);

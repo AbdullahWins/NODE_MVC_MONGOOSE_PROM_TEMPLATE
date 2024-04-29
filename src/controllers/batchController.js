@@ -3,7 +3,7 @@
 const Batch = require("../models/BatchModel");
 const Student = require("../models/StudentModel");
 const { logger } = require("../services/loggers/Winston");
-const { ValidObjectId } = require("../services/validators/ValidObjectId");
+const { validObjectId } = require("../services/validators/ValidObjectId");
 
 //get all Batch using mongoose
 const getAllBatches = async (req, res) => {
@@ -26,7 +26,7 @@ const getOneBatch = async (req, res) => {
   try {
     const batchId = req?.params?.id;
     //object id validation
-    if (!ValidObjectId(batchId)) {
+    if (!validObjectId(batchId)) {
       return res.status(400).send({ message: "Invalid ObjectId" });
     }
     //perform query on database
@@ -111,7 +111,7 @@ const updateOneBatch = async (req, res) => {
     const data = req?.body?.data ? JSON.parse(req?.body?.data) : {};
 
     //object id validation
-    if (!ValidObjectId(batchId)) {
+    if (!validObjectId(batchId)) {
       return res.status(400).send({ message: "Invalid ObjectId" });
     }
     let updatedData = { ...data };
@@ -136,7 +136,7 @@ const deleteOneBatchById = async (req, res) => {
   try {
     const batchId = req?.params?.id;
     //object id validation
-    if (!ValidObjectId(batchId)) {
+    if (!validObjectId(batchId)) {
       return res.status(400).send({ message: "Invalid ObjectId" });
     }
 

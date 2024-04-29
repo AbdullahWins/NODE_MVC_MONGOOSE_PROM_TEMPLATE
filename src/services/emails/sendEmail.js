@@ -4,7 +4,7 @@ const {
   nodemailerTransporter,
 } = require("../../../config/emails/nodemailer.config");
 
-const SendEmail = async (receiver, subject, code) => {
+const sendEmail = async (receiver, subject, code) => {
   try {
     // Read the HTML template file
     const emailTemplatePath = path.join(
@@ -28,4 +28,4 @@ const SendEmail = async (receiver, subject, code) => {
   }
 };
 
-module.exports = { SendEmail };
+module.exports = { sendEmail };

@@ -2,7 +2,7 @@
 
 const TeacherEvaluation = require("../models/TeacherEvaluationModel");
 const { logger } = require("../services/loggers/Winston");
-const { ValidObjectId } = require("../services/validators/ValidObjectId");
+const { validObjectId } = require("../services/validators/ValidObjectId");
 
 //get all Teacher using mongoose
 const getAllTeacherEvaluations = async (req, res) => {
@@ -25,7 +25,7 @@ const getOneTeacherEvaluation = async (req, res) => {
   try {
     const evaluationId = req?.params?.id;
     //object id validation
-    if (!ValidObjectId(evaluationId)) {
+    if (!validObjectId(evaluationId)) {
       return res.status(400).send({ message: "Invalid ObjectId" });
     }
 
@@ -286,7 +286,7 @@ const updateOneTeacherEvaluation = async (req, res) => {
     const evaluationId = req?.params?.id;
     const data = req?.body?.data ? JSON.parse(req?.body?.data) : {};
     //object id validation
-    if (!ValidObjectId(evaluationId)) {
+    if (!validObjectId(evaluationId)) {
       return res.status(400).send({ message: "Invalid ObjectId" });
     }
     let updatedData = { ...data };
@@ -315,7 +315,7 @@ const deleteOneTeacherEvaluationById = async (req, res) => {
   try {
     const evaluationId = req?.params?.id;
     //object id validation
-    if (!ValidObjectId(evaluationId)) {
+    if (!validObjectId(evaluationId)) {
       return res.status(400).send({ message: "Invalid ObjectId" });
     }
 

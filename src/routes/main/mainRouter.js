@@ -2,7 +2,6 @@ const router = require("express").Router();
 
 //import routes
 const defaultRoutes = require("./defaultRoutes");
-const passportRoutes = require("../passportRoutes");
 const adminRoutes = require("../adminRoutes");
 const studentRoutes = require("../studentRoutes");
 const teacherRoutes = require("../teacherRoutes");
@@ -17,7 +16,6 @@ const dashboardRoutes = require("../dashboardRoutes");
 
 //routes
 router.use(defaultRoutes);
-router.use(passportRoutes);
 
 //routes with prefixes
 router.use("/admins", adminRoutes);

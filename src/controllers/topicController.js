@@ -2,7 +2,7 @@
 
 const Topic = require("../models/TopicModel");
 const { logger } = require("../services/loggers/Winston");
-const { ValidObjectId } = require("../services/validators/ValidObjectId");
+const { validObjectId } = require("../services/validators/ValidObjectId");
 
 //get all Topic using mongoose
 const getAllTopics = async (req, res) => {
@@ -25,7 +25,7 @@ const getOneTopic = async (req, res) => {
   try {
     const topicId = req?.params?.id;
     //object id validation
-    if (!ValidObjectId(topicId)) {
+    if (!validObjectId(topicId)) {
       return res.status(400).send({ message: "Invalid ObjectId" });
     }
 
@@ -106,7 +106,7 @@ const updateOneTopic = async (req, res) => {
     const data = req?.body?.data ? JSON.parse(req?.body?.data) : {};
 
     //object id validation
-    if (!ValidObjectId(topicId)) {
+    if (!validObjectId(topicId)) {
       return res.status(400).send({ message: "Invalid ObjectId" });
     }
     let updatedData = { ...data };
@@ -131,7 +131,7 @@ const deleteOneTopicById = async (req, res) => {
   try {
     const topicId = req?.params?.id;
     //object id validation
-    if (!ValidObjectId(topicId)) {
+    if (!validObjectId(topicId)) {
       return res.status(400).send({ message: "Invalid ObjectId" });
     }
 

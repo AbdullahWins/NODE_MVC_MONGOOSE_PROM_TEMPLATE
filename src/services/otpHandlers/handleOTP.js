@@ -1,16 +1,16 @@
 const { Timekoto } = require("timekoto");
-const { SendEmail } = require("../emails/sendEmail");
+const { sendEmail } = require("../emails/SendEmail");
 const { logger } = require("../loggers/Winston");
 const OTP = require("../../models/OtpModel");
 
 //create a 4 digit OTP
-const CreateOTP = () => {
+const createOTP = () => {
   const otp = Math.floor(1000 + Math.random() * 9000);
   return otp;
 };
 
 //save the otp to database
-const SaveOTP = async (email, otp) => {
+const saveOTP = async (email, otp) => {
   const existingOtp = await OTP.findOne({ email });
   if (existingOtp) {
     const expiresAt = Timekoto() + 60 * 3; // 3 mins in seconds
@@ -27,7 +27,7 @@ const SaveOTP = async (email, otp) => {
 };
 
 //send the otp to the user
-const SendOTP = async ({ email, Model }) => {
+const sendOTP = async ({ email, Model }) => {
   try {
     //validate inputs
     if (!email) {
@@ -39,15 +39,15 @@ const SendOTP = async ({ email, Model }) => {
       return { error: `${Model.modelName} doesn't exist` };
     } else {
       //create and save the otp
-      const otp = CreateOTP();
-      const savedOtp = await SaveOTP(receiver, otp);
+      const otp = createOTP();
+      const savedOtp = await saveOTP(receiver, otp);
       if (!savedOtp) {
         return { error: "Failed to send OTP" };
       }
       const subject = "Reset Your Password";
       const code = otp;
       //send the email
-      const status = await SendEmail(receiver, subject, code);
+      const status = await sendEmail(receiver, subject, code);
       if (!status?.code === 200) {
         return { error: `${Model.modelName} doesn't exist` };
       }
@@ -60,8 +60,9 @@ const SendOTP = async ({ email, Model }) => {
 };
 
 //match the otp
-const MatchOTP = async (email, otp) => {
+const matchOTP = async (email, otp) => {
   const savedOtp = await OTP.findOne({ email: email });
+  console.log(email, otp, savedOtp);
   if (savedOtp?.otp === otp) {
     if (savedOtp?.expiresAt > Timekoto()) {
       return { isMatch: true, message: "OTP matched!" };
@@ -74,7 +75,7 @@ const MatchOTP = async (email, otp) => {
 };
 
 //validate the otp
-const ValidateOTP = async ({ email, otp, Model }) => {
+const validateOTP = async ({ email, otp, Model }) => {
   try {
     //validate inputs
     if (!otp || !email) {
@@ -86,7 +87,7 @@ const ValidateOTP = async ({ email, otp, Model }) => {
       return { error: `${Model.modelName} not found` };
     }
     //match the otp
-    const otpMatch = await MatchOTP(email, otp);
+    const otpMatch = await matchOTP(email, otp);
     if (!otpMatch?.isMatch) {
       return { error: otpMatch?.message };
     } else {
@@ -98,4 +99,4 @@ const ValidateOTP = async ({ email, otp, Model }) => {
   }
 };
 
-module.exports = { CreateOTP, SaveOTP, SendOTP, MatchOTP, ValidateOTP };
+module.exports = { createOTP, saveOTP, sendOTP, matchOTP, validateOTP };

@@ -19,8 +19,6 @@ const comparePasswords = async (inputPassword, hashedPassword) => {
     const stringInputPassword = inputPassword?.toString();
     const stringHashedPassword = hashedPassword?.toString();
 
-    console.log("stringInputPassword", stringInputPassword);
-    console.log("stringHashedPassword", stringHashedPassword);
     const passwordMatch = await bcrypt.compare(
       stringInputPassword,
       stringHashedPassword

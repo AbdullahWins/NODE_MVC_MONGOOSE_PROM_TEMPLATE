@@ -1,287 +1,211 @@
-// controllers/AdminController.js
-
 const Admin = require("../models/AdminModel");
 const { logger } = require("../services/loggers/Winston");
-const {
-  hashPassword,
-  comparePasswords,
-} = require("../services/encryptions/bcryptHandler");
-const { ValidObjectId } = require("../services/validators/ValidObjectId");
+const { hashPassword } = require("../services/encryptions/BcryptHandler");
+const { validObjectId } = require("../services/validators/ValidObjectId");
 const {
   handleFileUpload,
-} = require("../services/fileHandlers/handleFileUpload");
-const { ValidateOTP, SendOTP } = require("../services/otpHandlers/handleOTP");
+} = require("../services/fileHandlers/HandleFileUpload");
+const { sendOTP, validateOTP } = require("../services/otpHandlers/HandleOTP");
+const { sendResponse } = require("../helpers/ResponseHelper");
+const { asyncHandler } = require("../middlewares/AsyncHandler");
 
-//login using mongoose
-const LoginAdmin = async (req, res) => {
-  try {
-    const data = JSON.parse(req?.body?.data);
-    const { email, password } = data;
-    const result = await Admin.login({ email, password });
-    if (result?.error) {
-      let status = 401;
-      if (result?.error === "Admin not found") {
-        status = 404;
-      }
-      return res.status(status).json({ message: result?.error });
-    } else {
-      logger.log("info", `Admin logged in: ${email}`);
-      return res.json(result);
+const loginAdmin = async (req, res) => {
+  const data = JSON.parse(req?.body?.data);
+  const { email, password } = data;
+  const result = await Admin.login({ email, password });
+  if (result?.error) {
+    let status = 401;
+    if (result?.error === "Admin not found") {
+      status = 404;
     }
-  } catch (error) {
-    logger.log("error", error);
-    return res.status(500).json({ message: "Internal server error" });
+    return sendResponse(res, status, result?.error);
+  } else {
+    logger.log("info", `Admin logged in: ${email}`);
+    return sendResponse(res, 200, "Admin logged in successfully", result);
   }
 };
 
-//register using mongoose
-const RegisterAdmin = async (req, res) => {
-  try {
-    const { name, email, password } = JSON.parse(req?.body?.data);
-    const result = await Admin.register({ name, email, password });
-    if (result?.error) {
-      return res.status(401).json({ message: result?.error });
-    } else {
-      logger.log("info", `Admin registered: ${email}`);
-      return res.status(201).json(result);
-    }
-  } catch (error) {
-    logger.log("error", `Error creating admin: ${error?.message}`);
-    return res.status(500).json({ error: error?.message });
+const registerAdmin = async (req, res) => {
+  const { name, email, password } = JSON.parse(req?.body?.data);
+  const result = await Admin.register({ name, email, password });
+  if (result?.error) {
+    return sendResponse(res, 401, result?.error);
+  } else {
+    logger.log("info", `Admin registered: ${email}`);
+    return sendResponse(res, 201, "Admin registered successfully", result);
   }
 };
 
-//get all admins using mongoose
 const getAllAdmins = async (req, res) => {
   try {
     const admins = await Admin.find();
     logger.log("info", `Found ${admins.length} admins`);
-    return res.json(admins);
+    return sendResponse(res, 200, "Admins retrieved successfully", admins);
   } catch (error) {
-    return res.status(500).json({ error: error.message });
+    logger.log("error", error);
+    return sendResponse(res, 500, "Failed to retrieve admins");
   }
 };
 
-// get single admin using mongoose
 const getOneAdmin = async (req, res) => {
+  const adminId = req?.params?.id;
+
+  if (!validObjectId(adminId)) {
+    return sendResponse(res, 400, "Invalid ObjectId");
+  }
+
   try {
-    const adminId = req?.params?.id;
-    //object id validation
-    if (!ValidObjectId(adminId)) {
-      return res.status(400).send({ message: "Invalid ObjectId" });
-    }
-
-    //get admin using model
     const admin = await Admin.findOne({ _id: adminId });
-
     if (!admin) {
-      return res.status(404).send({ message: "Admin not found" });
+      return sendResponse(res, 404, "Admin not found");
     } else {
       logger.log("info", JSON.stringify(admin, null, 2));
-      return res.send(admin);
+      return sendResponse(res, 200, "Admin retrieved successfully", admin);
     }
-  } catch (err) {
-    logger.log("error", err);
-    return res.status(500).send({ message: "Server Error" });
+  } catch (error) {
+    logger.log("error", error);
+    return sendResponse(res, 500, "Failed to retrieve admin");
   }
 };
 
-// update one admin using mongoose
 const updateAdminById = async (req, res) => {
-  try {
-    const id = req?.params?.id;
-    //object id validation
-    if (!ValidObjectId(id)) {
-      return res.status(400).send({ message: "Invalid ObjectId" });
-    }
+  const id = req?.params?.id;
 
-    const { files } = req;
-    const data = req?.body?.data ? JSON.parse(req?.body?.data) : {};
-    const { password, ...additionalData } = data;
-    const folderName = "admins";
-    let updateData = {};
+  if (!validObjectId(id)) {
+    return sendResponse(res, 400, "Invalid ObjectId");
+  }
 
-    if (files?.length > 0) {
-      const fileUrls = await handleFileUpload({ req, files, folderName });
-      const fileUrl = fileUrls[0];
-      updateData = { ...updateData, fileUrl };
-    }
+  const { files } = req;
+  const data = req?.body?.data ? JSON.parse(req?.body?.data) : {};
+  const { password, ...additionalData } = data;
+  const folderName = "admins";
+  let updateData = {};
 
-    if (password) {
-      const hashedPassword = await hashPassword(password);
-      updateData = { ...updateData, password: hashedPassword };
-    }
-
-    if (Object.keys(additionalData).length > 0) {
-      updateData = { ...updateData, ...additionalData };
-    }
-    logger.log("info", JSON.stringify(updateData, null, 2));
-    const updatedAdmin = await Admin.findOneAndUpdate(
-      { _id: id },
-      {
-        $set: updateData,
-      },
-      { new: true } // To return the updated document
-    );
-
-    return res.json({
-      message: "Admin updated successfully",
-      admin: updatedAdmin,
+  if (files?.single) {
+    const fileUrls = await handleFileUpload({
+      req,
+      files: files?.single,
+      folderName,
     });
+    const fileUrl = fileUrls[0];
+    updateData = { ...updateData, fileUrl };
+  }
+
+  if (password) {
+    const hashedPassword = await hashPassword(password);
+    updateData = { ...updateData, password: hashedPassword };
+  }
+
+  if (Object.keys(additionalData).length > 0) {
+    updateData = { ...updateData, ...additionalData };
+  }
+
+  logger.log("info", JSON.stringify(updateData, null, 2));
+
+  try {
+    const updatedAdmin = await Admin.updateAdminById({ id, updateData });
+
+    return sendResponse(res, 200, "Admin updated successfully", updatedAdmin);
   } catch (error) {
-    logger.log("error", `Error updating admin: ${error.message}`);
-    return res.status(500).json({ error: error.message });
+    logger.log("error", error);
+    return sendResponse(res, 500, "Failed to update admin");
   }
 };
 
-// send password reset OTP to admin using mongoose
 const sendPasswordResetOTP = async (req, res) => {
-  try {
-    const data = JSON.parse(req?.body?.data);
-    const { email } = data;
-    const result = await SendOTP({ email, Model: Admin });
-    if (result?.error) {
-      return res.status(401).send({ message: result?.error });
-    } else {
-      return res.status(200).send({ message: result?.message });
-    }
-  } catch (error) {
-    logger.log("error", error?.message);
-    return res.status(500).send({ message: "Failed to send OTP" });
+  const data = JSON.parse(req?.body?.data);
+  const { email } = data;
+  const result = await sendOTP({ email, Model: Admin });
+  if (result?.error) {
+    return sendResponse(res, 401, result?.error);
+  } else {
+    return sendResponse(res, 200, result?.message);
   }
 };
 
-// validate OTP using mongoose
 const validatePasswordResetOTP = async (req, res) => {
-  try {
-    const data = JSON.parse(req?.body?.data);
-    const { otp, email } = data;
-    const result = await ValidateOTP({ email, otp, Model: Admin });
-    console.log(result);
-    if (result?.error) {
-      return res.status(401).send({ message: result?.error });
-    } else {
-      return res.status(200).send({ message: result?.message });
-    }
-  } catch (err) {
-    logger.log("error", err);
-    return res.status(500).send({ message: "Failed to reset admin password" });
+  const data = JSON.parse(req?.body?.data);
+  const { otp, email } = data;
+  const result = await validateOTP({ email, otp, Model: Admin });
+  if (result?.error) {
+    return sendResponse(res, 401, result?.error);
+  } else {
+    return sendResponse(res, 200, result?.message);
   }
 };
 
-// update one admin password by email OTP using mongoose
+// Update admin password by OTP
 const updateAdminPasswordByOTP = async (req, res) => {
-  try {
-    const data = JSON.parse(req?.body?.data);
-    const { otp, email, newPassword } = data;
+  const data = JSON.parse(req?.body?.data);
+  const { otp, email, newPassword } = data;
 
-    const otpStatus = await ValidateOTP({
-      email,
-      otp,
-      Model: Admin,
-    });
-    if (otpStatus?.error) {
-      logger.log("error", otpStatus?.error);
-      return res.status(401).send({ message: otpStatus?.error });
-    }
-    let updateData = {};
-    const hashedPassword = await hashPassword(newPassword);
-    updateData = { password: hashedPassword };
+  const updatedAdmin = await Admin.updatePasswordByOTP({
+    email,
+    otp,
+    newPassword,
+  });
 
-    //update password using model
-    const result = await Admin.findOneAndUpdate(
-      { email: email },
-      {
-        $set: updateData,
-      },
-      { new: true } // To return the updated document
-    );
-    logger.log("info", result);
-    if (result?.modifiedCount === 0) {
-      logger.log("info", `No modifications were made: ${email}`);
-      return res.status(404).send({ message: "No modifications were made!" });
-    } else {
-      logger.log("info", `Password updated for admin: ${email}`);
-      return res.send({ message: "Password updated successfully!" });
-    }
-  } catch (err) {
-    logger.log("error", err);
-    return res.status(500).send({ message: "Failed to reset admin password" });
+  if (updatedAdmin.error) {
+    return sendResponse(res, 401, updatedAdmin.error);
+  } else {
+    return sendResponse(res, 200, "Password updated successfully");
   }
 };
 
-// update one admin password by OldPassword using mongoose
+// Update admin password by old password
 const updateAdminPasswordByOldPassword = async (req, res) => {
-  try {
-    const email = req?.params?.email;
-    const data = JSON.parse(req?.body?.data);
-    const admin = await Admin.findOne({ email: email });
-    const { oldPassword, newPassword } = data;
+  const email = req?.params?.email;
+  const data = JSON.parse(req?.body?.data);
+  const { oldPassword, newPassword } = data;
 
-    if (!admin) {
-      return res.status(404).json({ message: "Admin not found" });
-    }
-    console.log(admin);
+  const updatedAdmin = await Admin.updatePasswordByEmail({
+    email,
+    oldPassword,
+    newPassword,
+  });
 
-    const passwordMatch = await comparePasswords(oldPassword, admin?.password);
-
-    console.log("passwordMatch", passwordMatch);
-    if (!passwordMatch) {
-      return res.status(401).json({ message: "Invalid password" });
-    }
-    const hashedPassword = await hashPassword(newPassword);
-
-    const result = await Admin.findOneAndUpdate(
-      { email: email },
-      {
-        $set: { password: hashedPassword },
-      },
-      { new: true } // To return the updated document
+  if (updatedAdmin.error) {
+    return sendResponse(res, 401, updatedAdmin.error);
+  } else {
+    return sendResponse(
+      res,
+      200,
+      "Password updated successfully",
+      updatedAdmin
     );
-    return res.send({ message: result });
-  } catch (err) {
-    logger.log("error", err);
-    return res.status(500).send({ message: "Failed to update admin password" });
   }
 };
 
-// delete one admin by id using mongoose
+// Delete admin by id using mongoose
 const deleteAdminById = async (req, res) => {
-  try {
-    const id = req?.params?.id;
-    //object id validation
-    if (!ValidObjectId(id)) {
-      return res.status(400).send({ message: "Invalid ObjectId" });
-    }
+  const id = req?.params?.id;
 
-    //delete using model
-    const result = await Admin.deleteOne({ _id: id });
-    if (result?.deletedCount === 0) {
-      logger.log("error", `No admin found to delete with this id: ${id}`);
-      return res.send({
-        message: `No admin found to delete with this id: ${id} `,
-      });
-    } else {
-      logger.log("info", `Admin deleted: ${id}`);
-      return res.send({
-        message: `Admin deleted successfully with id: ${id} `,
-      });
-    }
-  } catch (err) {
-    logger.log("error", err);
-    return res.status(500).send({ message: "Failed to delete admin" });
+  if (!validObjectId(id)) {
+    return sendResponse(res, 400, "Invalid ObjectId");
+  }
+
+  const deletionResult = await Admin.deleteAdminById(id);
+
+  if (deletionResult.error) {
+    logger.log("error", deletionResult.error);
+    return sendResponse(res, 404, deletionResult.error);
+  } else {
+    logger.log("info", deletionResult.message);
+    return sendResponse(res, 200, deletionResult.message);
   }
 };
 
 module.exports = {
-  getOneAdmin,
-  getAllAdmins,
-  updateAdminById,
-  sendPasswordResetOTP,
-  validatePasswordResetOTP,
-  updateAdminPasswordByOTP,
-  RegisterAdmin,
-  LoginAdmin,
-  updateAdminPasswordByOldPassword,
-  deleteAdminById,
+  getOneAdmin: asyncHandler(getOneAdmin),
+  getAllAdmins: asyncHandler(getAllAdmins),
+  updateAdminById: asyncHandler(updateAdminById),
+  sendPasswordResetOTP: asyncHandler(sendPasswordResetOTP),
+  validatePasswordResetOTP: asyncHandler(validatePasswordResetOTP),
+  updateAdminPasswordByOTP: asyncHandler(updateAdminPasswordByOTP),
+  loginAdmin: asyncHandler(loginAdmin),
+  registerAdmin: asyncHandler(registerAdmin),
+  updateAdminPasswordByOldPassword: asyncHandler(
+    updateAdminPasswordByOldPassword
+  ),
+  deleteAdminById: asyncHandler(deleteAdminById),
 };
